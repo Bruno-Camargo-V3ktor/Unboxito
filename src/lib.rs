@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub enum Value {
     Null,
     Boolean(bool),
@@ -10,6 +11,7 @@ pub enum Value {
     Bytes(Vec<u8>),
 }
 
+#[derive(Debug)]
 pub enum Numbers {
     Int(i64),
     Float(f64),
