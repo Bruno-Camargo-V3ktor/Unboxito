@@ -1,0 +1,39 @@
+pub mod error {
+    use std::fmt::{self, Display};
+
+    #[derive(Debug)]
+    pub enum Error {
+        Message(String),
+    }
+
+    impl Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Error::Message(msg) => write!(f, "{}", msg),
+            }
+        }
+    }
+
+    impl std::error::Error for Error {}
+}
+
+pub trait Serializer {
+    type Ok;
+    type Error: std::error::Error;
+}
+
+pub trait Serialize {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer;
+}
+
+pub trait Deserializer<'de> {
+    type Error: std::error::Error;
+}
+
+pub trait Deserialize<'de>: Sized {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>;
+}
