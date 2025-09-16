@@ -20,6 +20,8 @@ pub mod error {
 pub trait Serializer {
     type Ok;
     type Error: std::error::Error;
+
+    fn serialize_bool(&mut self, v: bool) -> Result<(), Self::Error>;
 }
 
 pub trait Serialize {
