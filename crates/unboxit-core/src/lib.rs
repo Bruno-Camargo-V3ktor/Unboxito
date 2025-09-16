@@ -22,6 +22,9 @@ pub trait Serializer {
     type Error: std::error::Error;
 
     fn serialize_bool(&mut self, v: bool) -> Result<(), Self::Error>;
+    fn serialize_i64(&mut self, v: i64) -> Result<(), Self::Error>;
+    fn serialize_u64(&mut self, v: u64) -> Result<(), Self::Error>;
+    fn serialize_f64(&mut self, v: f64) -> Result<(), Self::Error>;
 }
 
 pub trait Serialize {

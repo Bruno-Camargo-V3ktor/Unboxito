@@ -29,4 +29,25 @@ impl Serializer for JsonSerializer {
 
         Ok(())
     }
+
+    fn serialize_u64(&mut self, v: u64) -> Result<(), Self::Error> {
+        self.output.push_str(&v.to_string());
+        Ok(())
+    }
+
+    fn serialize_i64(&mut self, v: i64) -> Result<(), Self::Error> {
+        self.output.push_str(&v.to_string());
+        Ok(())
+    }
+
+    fn serialize_f64(&mut self, v: f64) -> Result<(), Self::Error> {
+        if v.is_finite() {
+            self.output.push_str(&v.to_string());
+            Ok(())
+        } else {
+            Err(Error::Message(
+                "Cannot serialize non-finite f64".to_string(),
+            ))
+        }
+    }
 }
