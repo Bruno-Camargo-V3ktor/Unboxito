@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/unboxit-core"]
+members = ["crates/unboxit-core", "crates/unboxit-json"]
 
 
 [workspace.package]
