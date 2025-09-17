@@ -38,3 +38,21 @@ fn test_serialize_numbers() {
     let result = s.serialize_f64(f64::INFINITY);
     assert!(result.is_err());
 }
+
+
+#[test]
+fn test_serialize_string() {
+    let mut s = JsonSerializer::new();
+    s.serialize_str("hello world").unwrap();
+    assert_eq!(s.into_inner(), r#""hello world""#);
+
+    
+    let mut s = JsonSerializer::new();
+    s.serialize_str("").unwrap();
+    assert_eq!(s.into_inner(), r#""""#);
+
+
+    let mut s = JsonSerializer::new();
+    s.serialize_str("a \"b\\c\nd").unwrap();
+    assert_eq!(s.into_inner(), r#""a \"b\\c\nd""#);
+}
