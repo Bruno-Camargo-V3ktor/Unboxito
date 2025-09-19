@@ -6,7 +6,14 @@ use syn::{DeriveInput, parse_macro_input};
 pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
-    let g = quote! {};
+    let struct_name = &ast.ident;
 
+
+    let g = quote! {
+        impl unboxit::Serialize for #struct_name {
+            
+        }
+    };
+   
     g.into()
 }
