@@ -21,6 +21,7 @@ pub trait Serializer {
     type Ok;
     type Error: std::error::Error;
     type SerializeSeq: SerializeSeq<Ok = Self::Ok, Error = Self::Error>;
+    type SerializeStruct: SerializeStruct<Ok = Self::Ok, Error = Self::Error>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error>;
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error>;
@@ -30,6 +31,11 @@ pub trait Serializer {
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error>;
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error>;
+    fn serialize_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error>;
 }
 
 pub trait Serialize {
@@ -58,6 +64,20 @@ pub trait SerializeSeq {
     where
         T: Serialize;
 
+    fn end(self) -> Result<Self::Ok, Self::Error>;
+}
+
+pub trait SerializeStruct {
+    type Ok;
+    type Error: std::error::Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: Serialize;
     fn end(self) -> Result<Self::Ok, Self::Error>;
 }
 

@@ -1,8 +1,13 @@
-use unboxit::{SerializeSeq, Serializer, error::Error};
+use unboxit::{Serialize, SerializeSeq, SerializeStruct, Serializer, error::Error};
 
 pub struct JsonSerializer {}
 
 pub struct JsonSeqSerializer {
+    output: String,
+    is_first: bool,
+}
+
+pub struct JsonStructSerializer {
     output: String,
     is_first: bool,
 }
@@ -37,10 +42,45 @@ impl SerializeSeq for JsonSeqSerializer {
     }
 }
 
+impl SerializeStruct for JsonStructSerializer {
+    type Ok = String;
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T,
+    ) -> Result<(), Self::Error>
+    where
+        T: unboxit::Serialize,
+    {
+        if !self.is_first {
+            self.output.push(',');
+        }
+        self.is_first = false;
+
+        let key_str = key.serialize(JsonSerializer::new())?;
+        self.output.push_str(&key_str);
+
+        self.output.push(':');
+
+        let value_str = value.serialize(JsonSerializer::new())?;
+        self.output.push_str(&value_str);
+
+        Ok(())
+    }
+
+    fn end(mut self) -> Result<Self::Ok, Self::Error> {
+        self.output.push('}');
+        Ok(self.output)
+    }
+}
+
 impl Serializer for JsonSerializer {
     type Ok = String;
     type Error = Error;
     type SerializeSeq = JsonSeqSerializer;
+    type SerializeStruct = JsonStructSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(v.to_string())
@@ -88,10 +128,21 @@ impl Serializer for JsonSerializer {
         Ok("null".to_string())
     }
 
-    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         Ok(JsonSeqSerializer {
             output: "[".to_string(),
             is_first: true,
+        })
+    }
+
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> Result<Self::SerializeStruct, Self::Error> {
+        Ok(JsonStructSerializer {
+            is_first: true,
+            output: "{".to_string(),
         })
     }
 }

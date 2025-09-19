@@ -1,4 +1,4 @@
-use unboxit::{Serialize, Serializer};
+use unboxit::{Serialize, SerializeStruct, Serializer};
 use unboxit_json::JsonSerializer;
 
 #[test]
@@ -82,4 +82,29 @@ fn test_serializer_vetor() {
     let v_empty: Vec<i32> = vec![];
     let serializer = JsonSerializer::new();
     assert_eq!(v_empty.serialize(serializer).unwrap(), "[]");
+}
+
+#[test]
+fn test_serialize_struct() {
+    struct Point {
+        x: i32,
+        y: i32,
+    }
+
+    impl Serialize for Point {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct("Point", 2)?;
+            state.serialize_field("x", &self.x)?;
+            state.serialize_field("y", &self.y)?;
+            state.end()
+        }
+    }
+
+    let p = Point { x: 1, y: -10 };
+    let serializer = JsonSerializer::new();
+    let expected = r#"{"x":1,"y":-10}"#;
+    assert_eq!(p.serialize(serializer).unwrap(), expected);
 }
