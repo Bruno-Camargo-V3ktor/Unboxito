@@ -1,24 +1,46 @@
-use unboxit::{Serializer, error::Error};
+use unboxit::{SerializeSeq, Serializer, error::Error};
 
-pub struct JsonSerializer {
+pub struct JsonSerializer {}
+
+pub struct JsonSeqSerializer {
     output: String,
+    is_first: bool,
 }
 
 impl JsonSerializer {
     pub fn new() -> Self {
-        Self {
-            output: String::new(),
+        Self {}
+    }
+}
+
+impl SerializeSeq for JsonSeqSerializer {
+    type Ok = String;
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: unboxit::Serialize,
+    {
+        if !self.is_first {
+            self.output.push(',');
         }
+        self.is_first = false;
+
+        let element_str = value.serialize(JsonSerializer::new())?;
+        self.output.push_str(&element_str);
+        Ok(())
     }
 
-    pub fn into_inner(self) -> String {
-        self.output
+    fn end(mut self) -> Result<Self::Ok, Self::Error> {
+        self.output.push(']');
+        Ok(self.output)
     }
 }
 
 impl Serializer for JsonSerializer {
     type Ok = String;
     type Error = Error;
+    type SerializeSeq = JsonSeqSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(v.to_string())
@@ -64,5 +86,12 @@ impl Serializer for JsonSerializer {
 
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
         Ok("null".to_string())
+    }
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+        Ok(JsonSeqSerializer {
+            output: "[".to_string(),
+            is_first: true,
+        })
     }
 }

@@ -20,6 +20,7 @@ pub mod error {
 pub trait Serializer {
     type Ok;
     type Error: std::error::Error;
+    type SerializeSeq: SerializeSeq<Ok = Self::Ok, Error = Self::Error>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error>;
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error>;
@@ -27,6 +28,8 @@ pub trait Serializer {
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error>;
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Self::Error>;
     fn serialize_unit(self) -> Result<Self::Ok, Self::Error>;
+
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error>;
 }
 
 pub trait Serialize {
@@ -46,6 +49,36 @@ pub trait Deserialize<'de>: Sized {
 }
 
 ////////////////////////////////
+
+pub trait SerializeSeq {
+    type Ok;
+    type Error: std::error::Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+    where
+        T: Serialize;
+
+    fn end(self) -> Result<Self::Ok, Self::Error>;
+}
+
+////////////////////////////////
+
+impl<T> Serialize for Vec<T>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq_helper = serializer.serialize_seq(Some(self.len()))?;
+        for element in self {
+            seq_helper.serialize_element(element)?;
+        }
+
+        seq_helper.end()
+    }
+}
 
 impl<T> Serialize for Option<T>
 where

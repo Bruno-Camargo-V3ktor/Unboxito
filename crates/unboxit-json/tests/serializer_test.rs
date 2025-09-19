@@ -68,3 +68,18 @@ fn test_serialize_option() {
     let some_val = Some("hello");
     assert_eq!(some_val.serialize(serializer).unwrap(), r#""hello""#);
 }
+
+#[test]
+fn test_serializer_vetor() {
+    let v = vec![10, 20, 30];
+    let serializer = JsonSerializer::new();
+    assert_eq!(v.serialize(serializer).unwrap(), "[10,20,30]");
+
+    let v_str: Vec<&str> = vec!["a", "b"];
+    let serializer = JsonSerializer::new();
+    assert_eq!(v_str.serialize(serializer).unwrap(), r#"["a","b"]"#);
+
+    let v_empty: Vec<i32> = vec![];
+    let serializer = JsonSerializer::new();
+    assert_eq!(v_empty.serialize(serializer).unwrap(), "[]");
+}
