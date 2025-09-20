@@ -42,6 +42,7 @@ dependencies = [
  "quote",
  "syn",
  "unboxit",
+ "unboxit-json",
 ]
 
 [[package]]
