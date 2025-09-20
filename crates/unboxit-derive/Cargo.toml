@@ -11,3 +11,4 @@ proc-macro = true
 [dependencies]
 syn = "2.0"
 quote = "1.0"
+unboxit = { version = "0.1.0", path = "../unboxit-core" }
