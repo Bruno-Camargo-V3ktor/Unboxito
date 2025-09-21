@@ -108,3 +108,35 @@ fn test_serialize_struct() {
     let expected = r#"{"x":1,"y":-10}"#;
     assert_eq!(p.serialize(serializer).unwrap(), expected);
 }
+
+use unboxit_derive::UnboxitSerialize;
+
+#[test]
+fn derive_struct_pointer() {
+    #[derive(UnboxitSerialize)]
+    struct Pointer {
+        x: i32,
+        y: i32,
+    }
+
+    let s = JsonSerializer::new();
+    let pointer = Pointer { x: 0, y: 0 };
+    let json_pointer = pointer.serialize(s).unwrap();
+    assert_eq!(json_pointer, r#"{"x":0,"y":0}"#);
+}
+
+#[test]
+fn derive_struct_rename_pointer() {
+    #[derive(UnboxitSerialize)]
+    struct Pointer {
+        #[unboxit(rename = "cord_x")]
+        x: i32,
+        #[unboxit(rename = "cord_y")]
+        y: i32,
+    }
+
+    let s = JsonSerializer::new();
+    let pointer = Pointer { x: 0, y: 0 };
+    let json_pointer = pointer.serialize(s).unwrap();
+    assert_eq!(json_pointer, r#"{"cord_x":0,"cord_y":0}"#);
+}

@@ -41,8 +41,6 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn",
- "unboxit",
- "unboxit-json",
 ]
 
 [[package]]
@@ -50,6 +48,7 @@ name = "unboxit-json"
 version = "0.1.0"
 dependencies = [
  "unboxit",
+ "unboxit-derive",
 ]
 
 [[package]]

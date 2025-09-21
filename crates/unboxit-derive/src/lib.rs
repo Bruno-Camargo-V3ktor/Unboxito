@@ -1,8 +1,39 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, Lit, Meta, parse_macro_input};
 
-#[proc_macro_derive(UnboxitSerialize)]
+fn get_field_rename(field: &syn::Field) -> Option<String> {
+    for attr in &field.attrs {
+        if !attr.path().is_ident("unboxit") {
+            continue;
+        }
+
+        if let Meta::List(list) = &attr.meta {
+            let mut renamed_value = None;
+            let _ = list.parse_nested_meta(|meta| {
+                if meta.path.is_ident("rename") {
+                    if let Ok(expr) = meta.value()?.parse::<syn::Expr>() {
+                        if let syn::Expr::Lit(syn::ExprLit {
+                            lit: Lit::Str(lit), ..
+                        }) = expr
+                        {
+                            renamed_value = Some(lit.value());
+                        }
+                    }
+                }
+                Ok(())
+            });
+
+            if renamed_value.is_some() {
+                return renamed_value;
+            }
+        }
+    }
+
+    None
+}
+
+#[proc_macro_derive(UnboxitSerialize, attributes(unboxit))]
 pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
@@ -12,9 +43,9 @@ pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
     let fields = match &ast.data {
         Data::Struct(s) => match &s.fields {
             Fields::Named(fields) => &fields.named,
-            _ => panic!("")
+            _ => panic!(""),
         },
-        _ => panic!("")
+        _ => panic!(""),
     };
 
     let num_fields = fields.len();
@@ -22,8 +53,13 @@ pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
     let serialize_fields = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
 
+        let field_name_str = match get_field_rename(field) {
+            Some(renamed) => quote! { #renamed },
+            None => quote! { stringify!(#field_name) },
+        };
+
         quote! {
-            state.serialize_field(stringify!(#field_name), &self.#field_name)?;
+            state.serialize_field(#field_name_str, &self.#field_name)?;
         }
     });
 

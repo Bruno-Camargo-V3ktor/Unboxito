@@ -11,7 +11,3 @@ proc-macro = true
 [dependencies]
 syn = "2.0"
 quote = "1.0"
-
-[dev-dependencies]
-unboxit = { version = "0.1.0", path = "../unboxit-core" }
-unboxit-json = { version = "0.1.0", path = "../unboxit-json" }

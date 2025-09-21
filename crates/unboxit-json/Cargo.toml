@@ -7,3 +7,4 @@ license.workspace = true
 
 [dependencies]
 unboxit = { version = "0.1.0", path = "../unboxit-core" }
+unboxit-derive = { version = "0.1.0", path = "../unboxit-derive" }
