@@ -145,4 +145,8 @@ impl Serializer for JsonSerializer {
             output: "{".to_string(),
         })
     }
+
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
+        self.serialize_str(name)
+    }
 }

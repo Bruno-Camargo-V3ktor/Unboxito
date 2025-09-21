@@ -36,32 +36,62 @@ fn get_field_rename(field: &syn::Field) -> Option<String> {
 #[proc_macro_derive(UnboxitSerialize, attributes(unboxit))]
 pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
-
     let struct_name = &ast.ident;
-    let struct_name_str = struct_name.to_string();
+   
 
-    let fields = match &ast.data {
+    let body = match &ast.data {
         Data::Struct(s) => match &s.fields {
-            Fields::Named(fields) => &fields.named,
-            _ => panic!(""),
+            Fields::Named(fields) => {
+                let num_fields = fields.named.len();
+                let struct_name_str = struct_name.to_string();
+
+                let serialize_fields = fields.named.iter().map(|field| {
+                    let field_name = field.ident.as_ref().unwrap();
+
+                    let field_name_str = match get_field_rename(field) {
+                        Some(renamed) => quote! { #renamed },
+                        None => quote! { stringify!(#field_name) },
+                    };
+
+                    quote! {
+                        state.serialize_field(#field_name_str, &self.#field_name)?;
+                    }
+                });
+
+                quote! {
+                    let mut state = serializer.serialize_struct(#struct_name_str, #num_fields)?;
+                    #(#serialize_fields)*
+                    state.end()
+                }
+            }
+
+            Fields::Unnamed(fields) => {
+                let num_fields = fields.unnamed.len();
+                if num_fields == 1 {
+                    quote! { self.0.serialize(serializer) }
+                } else {
+                    let serialize_elements = (0..num_fields).map(|i| {
+                        let index = syn::Index::from(i);
+                        quote! { seq.serialize_element(&self.#index)?; }
+                    });
+
+                    quote! {
+                        let mut seq = serializer.serialize_seq(Some(#num_fields))?;
+                        #(#serialize_elements)*
+                        seq.end()
+                    }
+                }
+            }
+
+            Fields::Unit => {
+                let struct_name_str = struct_name.to_string();
+                quote! { serializer.serialize_unit_struct(#struct_name_str) }
+            }
+
         },
+
         _ => panic!(""),
     };
-
-    let num_fields = fields.len();
-
-    let serialize_fields = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
-
-        let field_name_str = match get_field_rename(field) {
-            Some(renamed) => quote! { #renamed },
-            None => quote! { stringify!(#field_name) },
-        };
-
-        quote! {
-            state.serialize_field(#field_name_str, &self.#field_name)?;
-        }
-    });
 
     let g = quote! {
         impl unboxit::Serialize for #struct_name {
@@ -70,12 +100,9 @@ pub fn unboxit_serialize_derive(input: TokenStream) -> TokenStream {
                 S: unboxit::Serializer,
             {
                 use unboxit::SerializeStruct;
+                use unboxit::SerializeSeq;
 
-                let mut state = serializer.serialize_struct(#struct_name_str, #num_fields)?;
-
-                #(#serialize_fields)*
-
-                state.end()
+                #body
             }
         }
     };

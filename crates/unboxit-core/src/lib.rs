@@ -36,6 +36,8 @@ pub trait Serializer {
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error>;
+
+    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error>;
 }
 
 pub trait Serialize {
@@ -139,5 +141,14 @@ impl Serialize for &str {
         S: Serializer,
     {
         serializer.serialize_str(self)
+    }
+}
+
+impl Serialize for String {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self)
     }
 }

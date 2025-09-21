@@ -140,3 +140,25 @@ fn derive_struct_rename_pointer() {
     let json_pointer = pointer.serialize(s).unwrap();
     assert_eq!(json_pointer, r#"{"cord_x":0,"cord_y":0}"#);
 }
+
+#[test]
+fn derive_struct_unit() {
+    #[derive(UnboxitSerialize)]
+    struct MyStruct;
+
+    let s = JsonSerializer::new();
+    let my_struct = MyStruct;
+    let json = my_struct.serialize(s).unwrap();
+    assert_eq!(json, r#""MyStruct""#);
+}
+
+#[test]
+fn derive_struct_tuple() {
+    #[derive(UnboxitSerialize)]
+    struct TupleStruct(String, bool, i32);
+
+    let s = JsonSerializer::new();
+    let tuple_struct = TupleStruct("hello".to_string(), true, 123);
+    let json = tuple_struct.serialize(s).unwrap();
+    assert_eq!(json, r#"["hello",true,123]"#);
+}
