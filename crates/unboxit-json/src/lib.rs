@@ -1,4 +1,11 @@
-use unboxit::{Serialize, SerializeSeq, SerializeStruct, Serializer, error::Error};
+use unboxit::{
+    Serialize,
+    SerializeSeq,
+    SerializeStruct,
+    SerializeTupleVariant,
+    Serializer,
+    error::Error,
+};
 
 pub struct JsonSerializer {}
 
@@ -8,6 +15,16 @@ pub struct JsonSeqSerializer {
 }
 
 pub struct JsonStructSerializer {
+    output: String,
+    is_first: bool,
+}
+
+pub struct JsonTupleVariantSerializer {
+    output: String,
+    is_first: bool,
+}
+
+pub struct JsonStructVariantSerializer {
     output: String,
     is_first: bool,
 }
@@ -23,8 +40,7 @@ impl SerializeSeq for JsonSeqSerializer {
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: unboxit::Serialize,
+        where T: unboxit::Serialize
     {
         if !self.is_first {
             self.output.push(',');
@@ -49,10 +65,9 @@ impl SerializeStruct for JsonStructSerializer {
     fn serialize_field<T: ?Sized>(
         &mut self,
         key: &'static str,
-        value: &T,
+        value: &T
     ) -> Result<(), Self::Error>
-    where
-        T: unboxit::Serialize,
+        where T: unboxit::Serialize
     {
         if !self.is_first {
             self.output.push(',');
@@ -76,11 +91,65 @@ impl SerializeStruct for JsonStructSerializer {
     }
 }
 
+impl SerializeTupleVariant for JsonTupleVariantSerializer {
+    type Ok = String;
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
+        where T: Serialize
+    {
+        if !self.is_first {
+            self.output.push(',');
+        }
+        self.is_first = false;
+        let value_str = value.serialize(JsonSerializer::new())?;
+        self.output.push_str(&value_str);
+        Ok(())
+    }
+
+    fn end(mut self) -> Result<Self::Ok, Self::Error> {
+        self.output.push_str("]}");
+        Ok(self.output)
+    }
+}
+
+impl SerializeStruct for JsonStructVariantSerializer {
+    type Ok = String;
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(
+        &mut self,
+        key: &'static str,
+        value: &T
+    ) -> Result<(), Self::Error>
+        where T: Serialize
+    {
+        if !self.is_first {
+            self.output.push(',');
+        }
+        self.is_first = false;
+
+        self.output.push_str(&key.serialize(JsonSerializer::new())?);
+        self.output.push(':');
+
+        let value_str = value.serialize(JsonSerializer::new())?;
+        self.output.push_str(&value_str);
+        Ok(())
+    }
+
+    fn end(mut self) -> Result<Self::Ok, Self::Error> {
+        self.output.push_str("}}");
+        Ok(self.output)
+    }
+}
+
 impl Serializer for JsonSerializer {
     type Ok = String;
     type Error = Error;
     type SerializeSeq = JsonSeqSerializer;
     type SerializeStruct = JsonStructSerializer;
+    type SerializeTupleVariant = JsonTupleVariantSerializer;
+    type SerializeStructVariant = JsonStructVariantSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
         Ok(v.to_string())
@@ -98,9 +167,7 @@ impl Serializer for JsonSerializer {
         if v.is_finite() {
             Ok(v.to_string())
         } else {
-            Err(Error::Message(
-                "Cannot serialize non-finite f64".to_string(),
-            ))
+            Err(Error::Message("Cannot serialize non-finite f64".to_string()))
         }
     }
 
@@ -138,7 +205,7 @@ impl Serializer for JsonSerializer {
     fn serialize_struct(
         self,
         _name: &'static str,
-        _len: usize,
+        _len: usize
     ) -> Result<Self::SerializeStruct, Self::Error> {
         Ok(JsonStructSerializer {
             is_first: true,
@@ -148,5 +215,54 @@ impl Serializer for JsonSerializer {
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
         self.serialize_str(name)
+    }
+
+    fn serialize_unit_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str
+    ) -> Result<Self::Ok, Self::Error> {
+        self.serialize_str(variant)
+    }
+
+    fn serialize_newtype_variant<T: ?Sized + Serialize>(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        value: &T
+    ) -> Result<Self::Ok, Self::Error> {
+        let key = variant.serialize(JsonSerializer::new())?;
+        let val = value.serialize(JsonSerializer::new())?;
+        Ok(format!("{{{}:{}}}", key, val))
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        let key = variant.serialize(JsonSerializer::new())?;
+        Ok(JsonTupleVariantSerializer {
+            output: format!("{{{}:[", key),
+            is_first: true,
+        })
+    }
+
+    fn serialize_struct_variant(
+        self,
+        _name: &'static str,
+        _variant_index: u32,
+        variant: &'static str,
+        _len: usize
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        let key = variant.serialize(JsonSerializer::new())?;
+        Ok(JsonStructVariantSerializer {
+            output: format!("{{{}:{{", key),
+            is_first: true,
+        })
     }
 }

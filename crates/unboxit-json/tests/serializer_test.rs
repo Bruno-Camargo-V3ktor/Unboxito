@@ -1,4 +1,4 @@
-use unboxit::{Serialize, SerializeStruct, Serializer};
+use unboxit::{ Serialize, SerializeStruct, Serializer, SerializeTupleVariant };
 use unboxit_json::JsonSerializer;
 
 #[test]
@@ -92,10 +92,7 @@ fn test_serialize_struct() {
     }
 
     impl Serialize for Point {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
             let mut state = serializer.serialize_struct("Point", 2)?;
             state.serialize_field("x", &self.x)?;
             state.serialize_field("y", &self.y)?;
@@ -161,4 +158,33 @@ fn derive_struct_tuple() {
     let tuple_struct = TupleStruct("hello".to_string(), true, 123);
     let json = tuple_struct.serialize(s).unwrap();
     assert_eq!(json, r#"["hello",true,123]"#);
+}
+
+#[test]
+fn test_enum_variant_serialization() {
+    let s = JsonSerializer::new();
+    let result = s.serialize_unit_variant("Status", 0, "Ativo").unwrap();
+    assert_eq!(result, r#""Ativo""#);
+
+    let s = JsonSerializer::new();
+    let result = s.serialize_newtype_variant("Comando", 1, "DefinirUsuario", &123i32).unwrap();
+    assert_eq!(result, r#"{"DefinirUsuario":123}"#);
+
+    let s = JsonSerializer::new();
+    let mut helper = s.serialize_tuple_variant("Cor", 0, "Rgb", 2).unwrap();
+
+    helper.serialize_field(&255i32).unwrap();
+    helper.serialize_field(&100i32).unwrap();
+
+    let result = helper.end().unwrap();
+    assert_eq!(result, r#"{"Rgb":[255,100]}"#);
+
+    let s = JsonSerializer::new();
+    let mut helper = s.serialize_struct_variant("Evento", 0, "Click", 2).unwrap();
+
+    helper.serialize_field("x", &10i32).unwrap();
+    helper.serialize_field("y", &20i32).unwrap();
+
+    let result = helper.end().unwrap();
+    assert_eq!(result, r#"{"Click":{"x":10,"y":20}}"#);
 }

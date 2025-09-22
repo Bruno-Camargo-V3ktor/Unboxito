@@ -23,6 +23,7 @@ pub trait Serializer {
     type SerializeSeq: SerializeSeq<Ok = Self::Ok, Error = Self::Error>;
     type SerializeStruct: SerializeStruct<Ok = Self::Ok, Error = Self::Error>;
     type SerializeTupleVariant: SerializeTupleVariant<Ok = Self::Ok, Error = Self::Error>;
+    type SerializeStructVariant: SerializeStruct<Ok = Self::Ok, Error = Self::Error>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error>;
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error>;
@@ -69,7 +70,7 @@ pub trait Serializer {
         variant_index: u32,
         variant: &'static str,
         len: usize
-    ) -> Result<Self::SerializeStruct, Self::Error>;
+    ) -> Result<Self::SerializeStructVariant, Self::Error>;
 }
 
 pub trait Serialize {
